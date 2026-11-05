@@ -1,0 +1,169 @@
+@model AcxiomCRM.Models.ViewModels.LeadConvertViewModel
+
+@{
+    ViewData["Title"] = "Convert Lead to Customer";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">
+            <i class="bi bi-arrow-repeat me-2"></i>Convert Lead to Customer
+        </h1>
+        <p class="text-muted mb-0">Converting lead <strong>@Model.LeadCode</strong> to a customer record</p>
+    </div>
+    <a asp-action="Details" asp-route-id="@Model.LeadId" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Back to Lead
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <form asp-action="Convert" method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <input asp-for="LeadId" type="hidden" />
+            <input asp-for="LeadCode" type="hidden" />
+
+            <!-- Conversion Notice -->
+            <div class="alert alert-info d-flex align-items-center" role="alert">
+                <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                <div>
+                    This will create a new customer from lead <strong>@Model.LeadCode</strong>. The lead status will be updated to <strong>Converted</strong>.
+                </div>
+            </div>
+
+            <!-- Customer Information -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-person-check me-2"></i>Customer Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="CustomerName" class="form-label fw-semibold"></label>
+                            <input asp-for="CustomerName" class="form-control" placeholder="Enter customer name" />
+                            <span asp-validation-for="CustomerName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="CompanyName" class="form-label fw-semibold"></label>
+                            <input asp-for="CompanyName" class="form-control" placeholder="Enter company name" />
+                            <span asp-validation-for="CompanyName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label fw-semibold"></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                <input asp-for="Email" class="form-control" placeholder="email@example.com" />
+                            </div>
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Phone" class="form-label fw-semibold"></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                                <input asp-for="Phone" class="form-control" placeholder="Enter phone number" />
+                            </div>
+                            <span asp-validation-for="Phone" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create Opportunity Checkbox -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <div class="form-check form-switch">
+                        <input asp-for="CreateOpportunity" class="form-check-input" type="checkbox" id="createOpportunitySwitch" checked />
+                        <label class="form-check-label fw-semibold" for="createOpportunitySwitch">
+                            <i class="bi bi-briefcase me-1"></i>Create Related Opportunity
+                        </label>
+                    </div>
+                </div>
+                <div class="card-body" id="opportunitySection">
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label asp-for="OpportunityName" class="form-label fw-semibold"></label>
+                            <input asp-for="OpportunityName" class="form-control" placeholder="Enter opportunity name" />
+                            <span asp-validation-for="OpportunityName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="OpportunityAmount" class="form-label fw-semibold"></label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input asp-for="OpportunityAmount" class="form-control" placeholder="0.00" />
+                            </div>
+                            <span asp-validation-for="OpportunityAmount" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="OpportunityProbability" class="form-label fw-semibold"></label>
+                            <div class="input-group">
+                                <input asp-for="OpportunityProbability" class="form-control" placeholder="0" min="0" max="100" />
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <span asp-validation-for="OpportunityProbability" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="ExpectedCloseDate" class="form-label fw-semibold"></label>
+                            <input asp-for="ExpectedCloseDate" class="form-control" type="date" />
+                            <span asp-validation-for="ExpectedCloseDate" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assignment -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-person-gear me-2"></i>Assignment
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="AssignedTo" class="form-label fw-semibold"></label>
+                            <select asp-for="AssignedTo" class="form-select" asp-items="Model.AvailableAssignees">
+                                <option value="">-- Select Assignee --</option>
+                            </select>
+                            <span asp-validation-for="AssignedTo" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="d-flex justify-content-end gap-2">
+                <a asp-action="Details" asp-route-id="@Model.LeadId" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg me-1"></i>Cancel
+                </a>
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-arrow-repeat me-1"></i>Convert Lead
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const createOpportunityCheckbox = document.getElementById('createOpportunitySwitch');
+            const opportunitySection = document.getElementById('opportunitySection');
+
+            function toggleOpportunitySection() {
+                if (createOpportunityCheckbox.checked) {
+                    opportunitySection.style.display = 'block';
+                } else {
+                    opportunitySection.style.display = 'none';
+                }
+            }
+
+            createOpportunityCheckbox.addEventListener('change', toggleOpportunitySection);
+
+            // Initialize on page load
+            toggleOpportunitySection();
+        });
+    </script>
+}

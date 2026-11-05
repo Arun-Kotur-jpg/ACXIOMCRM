@@ -1,0 +1,256 @@
+@model AcxiomCRM.Models.ViewModels.PipelineReportViewModel
+@{
+    ViewData["Title"] = "Pipeline Report";
+    var filter = (AcxiomCRM.Models.ViewModels.BaseReportFilter)ViewBag.Filter;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 fw-bold text-dark mb-1">Sales Pipeline Analysis</h1>
+        <p class="text-secondary small mb-0">Stage distribution, owner workloads, and pipeline weighting metrics</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Reports Hub
+        </a>
+        <a asp-action="ExportPipelineCsv"
+           asp-route-searchTerm="@filter.SearchTerm"
+           asp-route-ownerId="@filter.OwnerId"
+           asp-route-startDate="@filter.StartDate?.ToString("yyyy-MM-dd")"
+           asp-route-endDate="@filter.EndDate?.ToString("yyyy-MM-dd")"
+           class="btn btn-success">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card shadow-sm border mb-4">
+    <div class="card-body">
+        <form method="get" asp-action="Pipeline" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold text-secondary">Search</label>
+                <input type="text" name="SearchTerm" value="@filter.SearchTerm" class="form-control" placeholder="Opportunity name or customer..." />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-secondary">Owner</label>
+                <select name="OwnerId" class="form-select" asp-items="ViewBag.AvailableOwners">
+                    <option value="">All Owners</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-secondary">Start Date</label>
+                <input type="date" name="StartDate" value="@(filter.StartDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-secondary">End Date</label>
+                <input type="date" name="EndDate" value="@(filter.EndDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100" title="Apply Filter">
+                    <i class="bi bi-funnel"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm border p-3">
+            <span class="text-secondary small fw-semibold">Open Deals</span>
+            <div class="d-flex align-items-baseline gap-2 mt-1">
+                <span class="fs-3 fw-bold text-dark">@Model.TotalOpenCount</span>
+                <span class="small text-muted">deals in progress</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border p-3">
+            <span class="text-secondary small fw-semibold">Total Pipeline Value</span>
+            <div class="d-flex align-items-baseline gap-2 mt-1">
+                <span class="fs-3 fw-bold text-primary">₹@Model.TotalOpenValue.ToString("N2")</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border p-3">
+            <span class="text-secondary small fw-semibold">Weighted Pipeline Forecast</span>
+            <div class="d-flex align-items-baseline gap-2 mt-1">
+                <span class="fs-3 fw-bold text-success">₹@Model.TotalWeightedValue.ToString("N2")</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summaries Row: Stage & Owner -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card shadow-sm border h-100">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold text-dark">Pipeline by Stage</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Stage</th>
+                            <th>Deals</th>
+                            <th>Total Value</th>
+                            <th>Weighted Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.StageSummaries.Any())
+                        {
+                            @foreach (var s in Model.StageSummaries)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@s.Stage</td>
+                                    <td>@s.Count</td>
+                                    <td>₹@s.TotalAmount.ToString("N2")</td>
+                                    <td class="text-secondary">₹@s.WeightedAmount.ToString("N2")</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="4" class="text-center py-3 text-secondary">No stage data available.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow-sm border h-100">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold text-dark">Pipeline by Owner</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Owner</th>
+                            <th>Open Deals</th>
+                            <th>Total Value</th>
+                            <th>Weighted Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.OwnerSummaries.Any())
+                        {
+                            @foreach (var o in Model.OwnerSummaries)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@o.OwnerName</td>
+                                    <td>@o.OpenCount</td>
+                                    <td>₹@o.TotalAmount.ToString("N2")</td>
+                                    <td class="text-secondary">₹@o.WeightedAmount.ToString("N2")</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="4" class="text-center py-3 text-secondary">No owner data available.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Opportunities Detailed Table -->
+<div class="card shadow-sm border">
+    <div class="card-header bg-white py-3">
+        <h6 class="mb-0 fw-bold text-dark">Open Pipeline Opportunities</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Opportunity</th>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>Stage</th>
+                    <th>Prob.</th>
+                    <th>Weighted Value</th>
+                    <th>Owner</th>
+                    <th>Expected Close</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Opportunities.Items.Any())
+                {
+                    @foreach (var o in Model.Opportunities.Items)
+                    {
+                        <tr>
+                            <td class="fw-semibold">
+                                <a asp-controller="Opportunities" asp-action="Details" asp-route-id="@o.OpportunityId" class="text-decoration-none">
+                                    @o.OpportunityName
+                                </a>
+                            </td>
+                            <td>@(o.Customer?.CustomerName ?? "—")</td>
+                            <td class="fw-semibold">₹@o.Amount.ToString("N2")</td>
+                            <td><span class="badge bg-light text-dark border">@o.Stage</span></td>
+                            <td>@o.Probability%</td>
+                            <td class="text-secondary">₹@o.WeightedAmount.ToString("N2")</td>
+                            <td>@(o.AssignedToUser?.FullName ?? "Unassigned")</td>
+                            <td class="small text-secondary">@o.ExpectedCloseDate.ToString("dd MMM yyyy")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-secondary">No open opportunities found.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.Opportunities.TotalPages > 1)
+    {
+        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+            <span class="small text-secondary">
+                Showing @(((Model.Opportunities.PageNumber - 1) * Model.Opportunities.PageSize) + 1) to @(Math.Min(Model.Opportunities.PageNumber * Model.Opportunities.PageSize, Model.Opportunities.TotalCount)) of @Model.Opportunities.TotalCount deals
+            </span>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(Model.Opportunities.HasPreviousPage ? "" : "disabled")">
+                        <a class="page-link" asp-action="Pipeline"
+                           asp-route-page="@(Model.Opportunities.PageNumber - 1)"
+                           asp-route-SearchTerm="@filter.SearchTerm"
+                           asp-route-OwnerId="@filter.OwnerId"
+                           asp-route-StartDate="@filter.StartDate?.ToString("yyyy-MM-dd")"
+                           asp-route-EndDate="@filter.EndDate?.ToString("yyyy-MM-dd")">Previous</a>
+                    </li>
+                    @for (int i = 1; i <= Model.Opportunities.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.Opportunities.PageNumber ? "active" : "")">
+                            <a class="page-link" asp-action="Pipeline"
+                               asp-route-page="@i"
+                               asp-route-SearchTerm="@filter.SearchTerm"
+                               asp-route-OwnerId="@filter.OwnerId"
+                               asp-route-StartDate="@filter.StartDate?.ToString("yyyy-MM-dd")"
+                               asp-route-EndDate="@filter.EndDate?.ToString("yyyy-MM-dd")">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(Model.Opportunities.HasNextPage ? "" : "disabled")">
+                        <a class="page-link" asp-action="Pipeline"
+                           asp-route-page="@(Model.Opportunities.PageNumber + 1)"
+                           asp-route-SearchTerm="@filter.SearchTerm"
+                           asp-route-OwnerId="@filter.OwnerId"
+                           asp-route-StartDate="@filter.StartDate?.ToString("yyyy-MM-dd")"
+                           asp-route-EndDate="@filter.EndDate?.ToString("yyyy-MM-dd")">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
+

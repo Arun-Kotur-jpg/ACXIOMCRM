@@ -1,0 +1,163 @@
+@model AcxiomCRM.Models.ViewModels.PagedResult<AcxiomCRM.Models.Entities.FollowUp>
+@{
+    ViewData["Title"] = "Follow-Up Report";
+    var filter = (AcxiomCRM.Models.ViewModels.BaseReportFilter)ViewBag.Filter;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 fw-bold text-dark mb-1">Follow-Up Completion Report</h1>
+        <p class="text-secondary small mb-0">Monitor communication tasks, schedules, and agent responsiveness</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Reports Hub
+        </a>
+        <a asp-action="ExportFollowUpsCsv"
+           asp-route-searchTerm="@filter.SearchTerm"
+           asp-route-ownerId="@filter.OwnerId"
+           asp-route-startDate="@filter.StartDate?.ToString("yyyy-MM-dd")"
+           asp-route-endDate="@filter.EndDate?.ToString("yyyy-MM-dd")"
+           asp-route-status="@ViewBag.Status"
+           class="btn btn-success">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card shadow-sm border mb-4">
+    <div class="card-body">
+        <form method="get" asp-action="FollowUps" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-secondary">Search</label>
+                <input type="text" name="SearchTerm" value="@filter.SearchTerm" class="form-control" placeholder="Subject or remarks..." />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-secondary">Status</label>
+                <select name="status" class="form-select" asp-items="Html.GetEnumSelectList<AcxiomCRM.Models.Enums.FollowUpStatus>()">
+                    <option value="">All Statuses</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-secondary">Assigned To</label>
+                <select name="OwnerId" class="form-select" asp-items="ViewBag.AvailableOwners">
+                    <option value="">All Users</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-secondary">Start Date</label>
+                <input type="date" name="StartDate" value="@(filter.StartDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-secondary">End Date</label>
+                <input type="date" name="EndDate" value="@(filter.EndDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100" title="Apply Filter">
+                    <i class="bi bi-funnel"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Table Card -->
+<div class="card shadow-sm border">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Subject</th>
+                    <th>Type</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Related Customer</th>
+                    <th>Related Opportunity</th>
+                    <th>Assigned To</th>
+                    <th>Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Items.Any())
+                {
+                    @foreach (var fu in Model.Items)
+                    {
+                        var statusBadge = fu.Status switch
+                        {
+                            FollowUpStatus.Planned => "bg-info text-dark",
+                            FollowUpStatus.Completed => "bg-success",
+                            FollowUpStatus.Missed => "bg-danger",
+                            _ => "bg-secondary"
+                        };
+
+                        <tr>
+                            <td class="fw-semibold">@fu.Subject</td>
+                            <td><span class="badge bg-light text-dark border">@fu.FollowUpType</span></td>
+                            <td class="small text-secondary">@fu.FollowUpDate.ToString("dd MMM yyyy HH:mm")</td>
+                            <td><span class="badge @statusBadge">@fu.Status</span></td>
+                            <td>@(fu.Customer?.CustomerName ?? "—")</td>
+                            <td>@(fu.Opportunity?.OpportunityName ?? "—")</td>
+                            <td>@(fu.AssignedToUser?.FullName ?? "Unassigned")</td>
+                            <td class="small text-secondary" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                @(string.IsNullOrEmpty(fu.Remarks) ? "—" : fu.Remarks)
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-secondary">
+                            No follow-ups found for this report filter.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+            <span class="small text-secondary">
+                Showing @(((Model.PageNumber - 1) * Model.PageSize) + 1) to @(Math.Min(Model.PageNumber * Model.PageSize, Model.TotalCount)) of @Model.TotalCount follow-ups
+            </span>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                        <a class="page-link" asp-action="FollowUps"
+                           asp-route-page="@(Model.PageNumber - 1)"
+                           asp-route-SearchTerm="@filter.SearchTerm"
+                           asp-route-OwnerId="@filter.OwnerId"
+                           asp-route-status="@ViewBag.Status"
+                           asp-route-StartDate="@filter.StartDate?.ToString("yyyy-MM-dd")"
+                           asp-route-EndDate="@filter.EndDate?.ToString("yyyy-MM-dd")">Previous</a>
+                    </li>
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                            <a class="page-link" asp-action="FollowUps"
+                               asp-route-page="@i"
+                               asp-route-SearchTerm="@filter.SearchTerm"
+                               asp-route-OwnerId="@filter.OwnerId"
+                               asp-route-status="@ViewBag.Status"
+                               asp-route-StartDate="@filter.StartDate?.ToString("yyyy-MM-dd")"
+                               asp-route-EndDate="@filter.EndDate?.ToString("yyyy-MM-dd")">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                        <a class="page-link" asp-action="FollowUps"
+                           asp-route-page="@(Model.PageNumber + 1)"
+                           asp-route-SearchTerm="@filter.SearchTerm"
+                           asp-route-OwnerId="@filter.OwnerId"
+                           asp-route-status="@ViewBag.Status"
+                           asp-route-StartDate="@filter.StartDate?.ToString("yyyy-MM-dd")"
+                           asp-route-EndDate="@filter.EndDate?.ToString("yyyy-MM-dd")">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
+

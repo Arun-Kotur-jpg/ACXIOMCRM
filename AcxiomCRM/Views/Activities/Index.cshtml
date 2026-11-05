@@ -1,0 +1,283 @@
+@model AcxiomCRM.Models.ViewModels.ActivityListViewModel
+@using AcxiomCRM.Models.Enums
+
+@{
+    ViewData["Title"] = "Activities";
+    var activities = Model.Activities;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0"><i class="bi bi-activity me-2"></i>Activities</h1>
+        <p class="text-muted mb-0">Track all calls, meetings, emails, and tasks</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>Log Activity
+    </a>
+</div>
+
+<!-- Filters -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form asp-action="Index" method="get">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Search</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" name="searchTerm" class="form-control" placeholder="Search subject..."
+                               value="@Model.SearchTerm" />
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Type</label>
+                    <select name="typeFilter" class="form-select">
+                        <option value="">All Types</option>
+                        @foreach (var type in Enum.GetValues<ActivityType>())
+                        {
+                            <option value="@((int)type)" selected="@(Model.TypeFilter == type)">@type</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Status</label>
+                    <select name="statusFilter" class="form-select">
+                        <option value="">All Statuses</option>
+                        @foreach (var status in Enum.GetValues<ActivityStatus>())
+                        {
+                            <option value="@((int)status)" selected="@(Model.StatusFilter == status)">@status</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Assigned To</label>
+                    <select name="assigneeFilter" class="form-select" asp-items="Model.AvailableAssignees">
+                        <option value="">All Assignees</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Date Range</label>
+                    <div class="input-group">
+                        <input type="date" name="startDate" class="form-control"
+                               value="@(Model.StartDate?.ToString("yyyy-MM-dd"))" placeholder="From" />
+                        <span class="input-group-text">to</span>
+                        <input type="date" name="endDate" class="form-control"
+                               value="@(Model.EndDate?.ToString("yyyy-MM-dd"))" placeholder="To" />
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-funnel me-1"></i>Apply
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg me-1"></i>Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results Table -->
+@if (activities.Items != null && activities.Items.Any())
+{
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Subject</th>
+                        <th>Type</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Related To</th>
+                        <th>Assigned To</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in activities.Items)
+                    {
+                        <tr>
+                            <td>
+                                <span class="fw-semibold">@item.Subject</span>
+                                @if (!string.IsNullOrEmpty(item.Description))
+                                {
+                                    <br />
+                                    <small class="text-muted">@(item.Description.Length > 60 ? item.Description.Substring(0, 60) + "..." : item.Description)</small>
+                                }
+                            </td>
+                            <td>
+                                @{
+                                    var typeBadge = item.ActivityType switch
+                                    {
+                                        ActivityType.Call => "primary",
+                                        ActivityType.Meeting => "success",
+                                        ActivityType.Email => "info",
+                                        ActivityType.Task => "warning",
+                                        _ => "secondary"
+                                    };
+                                    var typeIcon = item.ActivityType switch
+                                    {
+                                        ActivityType.Call => "bi-telephone",
+                                        ActivityType.Meeting => "bi-people",
+                                        ActivityType.Email => "bi-envelope",
+                                        ActivityType.Task => "bi-list-task",
+                                        _ => "bi-tag"
+                                    };
+                                }
+                                <span class="badge bg-@typeBadge">
+                                    <i class="bi @typeIcon me-1"></i>@item.ActivityType
+                                </span>
+                            </td>
+                            <td>
+                                <span>@item.ActivityDate.ToString("MMM dd, yyyy hh:mm tt")</span>
+                            </td>
+                            <td>
+                                @{
+                                    var statusBadge = item.Status switch
+                                    {
+                                        ActivityStatus.Planned => "info",
+                                        ActivityStatus.Completed => "success",
+                                        ActivityStatus.Cancelled => "secondary",
+                                        _ => "secondary"
+                                    };
+                                }
+                                <span class="badge bg-@statusBadge">@item.Status</span>
+                            </td>
+                            <td>
+                                @if (item.Customer != null)
+                                {
+                                    <a asp-controller="Customers" asp-action="Details" asp-route-id="@item.CustomerId" class="text-decoration-none">
+                                        <i class="bi bi-person me-1"></i>@item.Customer.CustomerName
+                                    </a>
+                                }
+                                else if (item.Lead != null)
+                                {
+                                    <a asp-controller="Leads" asp-action="Details" asp-route-id="@item.LeadId" class="text-decoration-none">
+                                        <i class="bi bi-funnel me-1"></i>@item.Lead.LeadName
+                                    </a>
+                                }
+                                else if (item.Opportunity != null)
+                                {
+                                    <a asp-controller="Opportunities" asp-action="Details" asp-route-id="@item.OpportunityId" class="text-decoration-none">
+                                        <i class="bi bi-trophy me-1"></i>@item.Opportunity.OpportunityName
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.AssignedToUser != null)
+                                {
+                                    <span><i class="bi bi-person-circle me-1"></i>@item.AssignedToUser.FullName</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Unassigned</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex gap-1 justify-content-end">
+                                    <a asp-action="Edit" asp-route-id="@item.ActivityId"
+                                       class="btn btn-sm btn-outline-primary" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    @if (item.Status == ActivityStatus.Planned)
+                                    {
+                                        <form asp-action="Complete" method="post" class="d-inline">
+                                            <input type="hidden" name="id" value="@item.ActivityId" />
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Mark Complete">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        @if (activities.TotalPages > 1)
+        {
+            <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                <span class="text-muted">
+                    Showing @((activities.CurrentPage - 1) * activities.PageSize + 1)–@(Math.Min(activities.CurrentPage * activities.PageSize, activities.TotalCount))
+                    of @activities.TotalCount activities
+                </span>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(activities.CurrentPage == 1 ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index"
+                               asp-route-page="@(activities.CurrentPage - 1)"
+                               asp-route-searchTerm="@Model.SearchTerm"
+                               asp-route-typeFilter="@(Model.TypeFilter.HasValue ? ((int)Model.TypeFilter.Value).ToString() : "")"
+                               asp-route-statusFilter="@(Model.StatusFilter.HasValue ? ((int)Model.StatusFilter.Value).ToString() : "")"
+                               asp-route-assigneeFilter="@Model.AssigneeFilter"
+                               asp-route-startDate="@(Model.StartDate?.ToString("yyyy-MM-dd"))"
+                               asp-route-endDate="@(Model.EndDate?.ToString("yyyy-MM-dd"))">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        @for (int i = 1; i <= activities.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == activities.CurrentPage ? "active" : "")">
+                                <a class="page-link" asp-action="Index"
+                                   asp-route-page="@i"
+                                   asp-route-searchTerm="@Model.SearchTerm"
+                                   asp-route-typeFilter="@(Model.TypeFilter.HasValue ? ((int)Model.TypeFilter.Value).ToString() : "")"
+                                   asp-route-statusFilter="@(Model.StatusFilter.HasValue ? ((int)Model.StatusFilter.Value).ToString() : "")"
+                                   asp-route-assigneeFilter="@Model.AssigneeFilter"
+                                   asp-route-startDate="@(Model.StartDate?.ToString("yyyy-MM-dd"))"
+                                   asp-route-endDate="@(Model.EndDate?.ToString("yyyy-MM-dd"))">
+                                    @i
+                                </a>
+                            </li>
+                        }
+                        <li class="page-item @(activities.CurrentPage == activities.TotalPages ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index"
+                               asp-route-page="@(activities.CurrentPage + 1)"
+                               asp-route-searchTerm="@Model.SearchTerm"
+                               asp-route-typeFilter="@(Model.TypeFilter.HasValue ? ((int)Model.TypeFilter.Value).ToString() : "")"
+                               asp-route-statusFilter="@(Model.StatusFilter.HasValue ? ((int)Model.StatusFilter.Value).ToString() : "")"
+                               asp-route-assigneeFilter="@Model.AssigneeFilter"
+                               asp-route-startDate="@(Model.StartDate?.ToString("yyyy-MM-dd"))"
+                               asp-route-endDate="@(Model.EndDate?.ToString("yyyy-MM-dd"))">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-journal-x display-4 text-muted"></i>
+            <h5 class="mt-3 text-muted">No Activities Found</h5>
+            <p class="text-muted mb-3">
+                @if (!string.IsNullOrEmpty(Model.SearchTerm) || Model.TypeFilter.HasValue || Model.StatusFilter.HasValue || Model.StartDate.HasValue || Model.EndDate.HasValue)
+                {
+                    <span>No activities match the current filters. Try adjusting your search criteria.</span>
+                }
+                else
+                {
+                    <span>Get started by logging your first activity.</span>
+                }
+            </p>
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>Log Activity
+            </a>
+        </div>
+    </div>
+}

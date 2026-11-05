@@ -1,0 +1,170 @@
+@model AcxiomCRM.Models.ViewModels.PagedResult<AcxiomCRM.Models.Entities.Lead>
+@{
+    ViewData["Title"] = "Lead Report";
+    var filter = (AcxiomCRM.Models.ViewModels.BaseReportFilter)ViewBag.Filter;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 fw-bold text-dark mb-1">Lead Analysis Report</h1>
+        <p class="text-secondary small mb-0">Evaluate lead acquisition, qualification pipeline, and ownership</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Reports Hub
+        </a>
+        <a asp-action="ExportLeadsCsv"
+           asp-route-searchTerm="@filter.SearchTerm"
+           asp-route-ownerId="@filter.OwnerId"
+           asp-route-startDate="@filter.StartDate?.ToString("yyyy-MM-dd")"
+           asp-route-endDate="@filter.EndDate?.ToString("yyyy-MM-dd")"
+           asp-route-status="@ViewBag.Status"
+           class="btn btn-success">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card shadow-sm border mb-4">
+    <div class="card-body">
+        <form method="get" asp-action="Leads" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-secondary">Search</label>
+                <input type="text" name="SearchTerm" value="@filter.SearchTerm" class="form-control" placeholder="Lead name, company, email..." />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-secondary">Status</label>
+                <select name="status" class="form-select" asp-items="Html.GetEnumSelectList<AcxiomCRM.Models.Enums.LeadStatus>()">
+                    <option value="">All Statuses</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-secondary">Assigned To</label>
+                <select name="OwnerId" class="form-select" asp-items="ViewBag.AvailableOwners">
+                    <option value="">All Users</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-secondary">Start Date</label>
+                <input type="date" name="StartDate" value="@(filter.StartDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-secondary">End Date</label>
+                <input type="date" name="EndDate" value="@(filter.EndDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100" title="Apply Filter">
+                    <i class="bi bi-funnel"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Table Card -->
+<div class="card shadow-sm border">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Code</th>
+                    <th>Lead Name</th>
+                    <th>Company</th>
+                    <th>Source</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Expected Value</th>
+                    <th>Assigned To</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Items.Any())
+                {
+                    @foreach (var l in Model.Items)
+                    {
+                        var statusBadge = l.Status switch
+                        {
+                            LeadStatus.New => "bg-info text-dark",
+                            LeadStatus.Contacted => "bg-primary",
+                            LeadStatus.Qualified => "bg-success",
+                            LeadStatus.Unqualified => "bg-secondary",
+                            LeadStatus.Converted => "bg-dark",
+                            LeadStatus.Lost => "bg-danger",
+                            _ => "bg-secondary"
+                        };
+
+                        <tr>
+                            <td><span class="badge bg-light text-dark border">@l.LeadCode</span></td>
+                            <td class="fw-semibold">
+                                <a asp-controller="Leads" asp-action="Details" asp-route-id="@l.LeadId" class="text-decoration-none">
+                                    @l.LeadName
+                                </a>
+                            </td>
+                            <td>@(l.CompanyName ?? "—")</td>
+                            <td>@l.Source</td>
+                            <td><span class="badge @statusBadge">@l.Status</span></td>
+                            <td><span class="badge bg-light text-dark border">@l.Priority</span></td>
+                            <td class="fw-semibold">₹@(l.ExpectedValue?.ToString("N2") ?? "0.00")</td>
+                            <td>@(l.AssignedToUser?.FullName ?? "Unassigned")</td>
+                            <td class="text-secondary small">@l.CreatedDate.ToString("dd MMM yyyy")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-secondary">
+                            No leads found for this report filter.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+            <span class="small text-secondary">
+                Showing @(((Model.PageNumber - 1) * Model.PageSize) + 1) to @(Math.Min(Model.PageNumber * Model.PageSize, Model.TotalCount)) of @Model.TotalCount leads
+            </span>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                        <a class="page-link" asp-action="Leads"
+                           asp-route-page="@(Model.PageNumber - 1)"
+                           asp-route-SearchTerm="@filter.SearchTerm"
+                           asp-route-OwnerId="@filter.OwnerId"
+                           asp-route-status="@ViewBag.Status"
+                           asp-route-StartDate="@filter.StartDate?.ToString("yyyy-MM-dd")"
+                           asp-route-EndDate="@filter.EndDate?.ToString("yyyy-MM-dd")">Previous</a>
+                    </li>
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                            <a class="page-link" asp-action="Leads"
+                               asp-route-page="@i"
+                               asp-route-SearchTerm="@filter.SearchTerm"
+                               asp-route-OwnerId="@filter.OwnerId"
+                               asp-route-status="@ViewBag.Status"
+                               asp-route-StartDate="@filter.StartDate?.ToString("yyyy-MM-dd")"
+                               asp-route-EndDate="@filter.EndDate?.ToString("yyyy-MM-dd")">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                        <a class="page-link" asp-action="Leads"
+                           asp-route-page="@(Model.PageNumber + 1)"
+                           asp-route-SearchTerm="@filter.SearchTerm"
+                           asp-route-OwnerId="@filter.OwnerId"
+                           asp-route-status="@ViewBag.Status"
+                           asp-route-StartDate="@filter.StartDate?.ToString("yyyy-MM-dd")"
+                           asp-route-EndDate="@filter.EndDate?.ToString("yyyy-MM-dd")">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
+

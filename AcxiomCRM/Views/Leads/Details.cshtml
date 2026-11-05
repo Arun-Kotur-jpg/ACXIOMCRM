@@ -1,0 +1,486 @@
+@model AcxiomCRM.Models.ViewModels.LeadDetailsViewModel
+@using AcxiomCRM.Models.Enums
+
+@{
+    ViewData["Title"] = $"Lead - {Model.Lead.LeadCode}";
+
+    var statusBadge = Model.Lead.Status switch
+    {
+        LeadStatus.New => "bg-info",
+        LeadStatus.Contacted => "bg-primary",
+        LeadStatus.Qualified => "bg-success",
+        LeadStatus.Unqualified => "bg-secondary",
+        LeadStatus.Converted => "bg-dark",
+        LeadStatus.Lost => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    var priorityBadge = Model.Lead.Priority switch
+    {
+        LeadPriority.Low => "bg-secondary",
+        LeadPriority.Medium => "bg-warning text-dark",
+        LeadPriority.High => "bg-danger",
+        _ => "bg-secondary"
+    };
+}
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">
+            <i class="bi bi-person-lines-fill me-2"></i>@Model.Lead.LeadName
+            <span class="badge @statusBadge ms-2">@Model.Lead.Status</span>
+            <span class="badge @priorityBadge ms-2">@Model.Lead.Priority</span>
+        </h1>
+        <p class="text-muted mb-0">@Model.Lead.LeadCode · @Model.Lead.CompanyName</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Back to Leads
+    </a>
+</div>
+
+<div class="row g-4">
+    <!-- Lead Information Card -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-info-circle me-2"></i>Lead Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted fw-semibold small">Lead Code</label>
+                        <p class="mb-0">@Model.Lead.LeadCode</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted fw-semibold small">Lead Name</label>
+                        <p class="mb-0">@Model.Lead.LeadName</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted fw-semibold small">Email</label>
+                        <p class="mb-0">
+                            @if (!string.IsNullOrEmpty(Model.Lead.Email))
+                            {
+                                <a href="mailto:@Model.Lead.Email">@Model.Lead.Email</a>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted fw-semibold small">Phone</label>
+                        <p class="mb-0">@(Model.Lead.Phone ?? "—")</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted fw-semibold small">Company</label>
+                        <p class="mb-0">@(Model.Lead.CompanyName ?? "—")</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted fw-semibold small">Source</label>
+                        <p class="mb-0">@Model.Lead.Source</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted fw-semibold small">Expected Value</label>
+                        <p class="mb-0 fw-semibold">
+                            @if (Model.Lead.ExpectedValue.HasValue)
+                            {
+                                <span>₹@Model.Lead.ExpectedValue.Value.ToString("N2")</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted fw-semibold small">Assigned To</label>
+                        <p class="mb-0">@(Model.Lead.AssignedToUser?.FullName ?? "—")</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted fw-semibold small">Created Date</label>
+                        <p class="mb-0">@Model.Lead.CreatedDate.ToString("dd MMM yyyy hh:mm tt")</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted fw-semibold small">Updated Date</label>
+                        <p class="mb-0">
+                            @if (Model.Lead.UpdatedDate.HasValue)
+                            {
+                                @Model.Lead.UpdatedDate.Value.ToString("dd MMM yyyy hh:mm tt")
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </p>
+                    </div>
+                    @if (Model.Lead.CustomerId.HasValue)
+                    {
+                        <div class="col-md-6">
+                            <label class="form-label text-muted fw-semibold small">Converted Date</label>
+                            <p class="mb-0">@(Model.Lead.ModifiedDate?.ToString("dd MMM yyyy hh:mm tt") ?? "—")</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted fw-semibold small">Converted Customer</label>
+                            <p class="mb-0">
+                                <a asp-controller="Customers" asp-action="Details" asp-route-id="@Model.Lead.CustomerId">
+                                    View Customer
+                                </a>
+                            </p>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Lead.Notes))
+                    {
+                        <div class="col-12">
+                            <label class="form-label text-muted fw-semibold small">Notes</label>
+                            <p class="mb-0">@Model.Lead.Notes</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions Sidebar -->
+    <div class="col-lg-4">
+        <!-- Action Buttons -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning me-2"></i>Actions
+                </h5>
+            </div>
+            <div class="card-body d-grid gap-2">
+                <a asp-action="Edit" asp-route-id="@Model.Lead.LeadId" class="btn btn-outline-primary">
+                    <i class="bi bi-pencil-square me-1"></i>Edit Lead
+                </a>
+                @if (Model.Lead.Status == LeadStatus.Qualified)
+                {
+                    <a asp-action="Convert" asp-route-id="@Model.Lead.LeadId" class="btn btn-success">
+                        <i class="bi bi-arrow-repeat me-1"></i>Convert to Customer
+                    </a>
+                }
+            </div>
+        </div>
+
+        <!-- Status Change -->
+        @if (Model.Lead.Status != LeadStatus.Converted && Model.Lead.Status != LeadStatus.Lost)
+        {
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-arrow-right-circle me-2"></i>Change Status
+                    </h5>
+                </div>
+                <div class="card-body d-grid gap-2">
+                    @if (Model.Lead.Status == LeadStatus.New)
+                    {
+                        <form asp-action="ChangeStatus" asp-route-id="@Model.Lead.LeadId" asp-route-newStatus="@LeadStatus.Contacted" method="post">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-telephone me-1"></i>Mark Contacted
+                            </button>
+                        </form>
+                    }
+                    @if (Model.Lead.Status == LeadStatus.Contacted)
+                    {
+                        <form asp-action="ChangeStatus" asp-route-id="@Model.Lead.LeadId" asp-route-newStatus="@LeadStatus.Qualified" method="post">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-check-circle me-1"></i>Qualify
+                            </button>
+                        </form>
+                        <form asp-action="ChangeStatus" asp-route-id="@Model.Lead.LeadId" asp-route-newStatus="@LeadStatus.Unqualified" method="post">
+                            <button type="submit" class="btn btn-secondary w-100">
+                                <i class="bi bi-x-circle me-1"></i>Mark Unqualified
+                            </button>
+                        </form>
+                    }
+                    @if (Model.Lead.Status == LeadStatus.Qualified)
+                    {
+                        <form asp-action="ChangeStatus" asp-route-id="@Model.Lead.LeadId" asp-route-newStatus="@LeadStatus.Converted" method="post">
+                            <button type="submit" class="btn btn-dark w-100">
+                                <i class="bi bi-arrow-repeat me-1"></i>Convert
+                            </button>
+                        </form>
+                    }
+                    @if (Model.Lead.Status == LeadStatus.Unqualified)
+                    {
+                        <form asp-action="ChangeStatus" asp-route-id="@Model.Lead.LeadId" asp-route-newStatus="@LeadStatus.Contacted" method="post">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i>Re-contact
+                            </button>
+                        </form>
+                    }
+                    <form asp-action="ChangeStatus" asp-route-id="@Model.Lead.LeadId" asp-route-newStatus="@LeadStatus.Lost" method="post">
+                        <button type="submit" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-dash-circle me-1"></i>Mark Lost
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <!-- Quick Actions -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-plus-circle me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body d-grid gap-2">
+                <a asp-controller="FollowUps" asp-action="Create" asp-route-leadId="@Model.Lead.LeadId" class="btn btn-outline-info">
+                    <i class="bi bi-calendar-check me-1"></i>New Follow-Up
+                </a>
+                <a asp-controller="Activities" asp-action="Create" asp-route-leadId="@Model.Lead.LeadId" class="btn btn-outline-warning">
+                    <i class="bi bi-activity me-1"></i>New Activity
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs Section -->
+<div class="card shadow-sm mt-2">
+    <div class="card-header bg-white">
+        <ul class="nav nav-tabs card-header-tabs" id="leadTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="opportunities-tab" data-bs-toggle="tab" data-bs-target="#opportunities" type="button" role="tab">
+                    <i class="bi bi-briefcase me-1"></i>Opportunities
+                    <span class="badge bg-primary ms-1">@(Model.RelatedOpportunities?.Count ?? 0)</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="followups-tab" data-bs-toggle="tab" data-bs-target="#followups" type="button" role="tab">
+                    <i class="bi bi-calendar-check me-1"></i>Follow-Ups
+                    <span class="badge bg-info ms-1">@(Model.RelatedFollowUps?.Count ?? 0)</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="activities-tab" data-bs-toggle="tab" data-bs-target="#activities" type="button" role="tab">
+                    <i class="bi bi-activity me-1"></i>Activities
+                    <span class="badge bg-warning text-dark ms-1">@(Model.RelatedActivities?.Count ?? 0)</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="audit-tab" data-bs-toggle="tab" data-bs-target="#audit" type="button" role="tab">
+                    <i class="bi bi-clock-history me-1"></i>Audit Log
+                    <span class="badge bg-secondary ms-1">@(Model.AuditLogs?.Count ?? 0)</span>
+                </button>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body">
+        <div class="tab-content" id="leadTabsContent">
+
+            <!-- Opportunities Tab -->
+            <div class="tab-pane fade show active" id="opportunities" role="tabpanel">
+                @if (Model.RelatedOpportunities != null && Model.RelatedOpportunities.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Stage</th>
+                                    <th class="text-end">Amount</th>
+                                    <th>Probability</th>
+                                    <th>Expected Close</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var opp in Model.RelatedOpportunities)
+                                {
+                                    <tr>
+                                        <td>
+                                            <a asp-controller="Opportunities" asp-action="Details" asp-route-id="@opp.OpportunityId" class="text-decoration-none fw-semibold">
+                                                @opp.OpportunityName
+                                            </a>
+                                        </td>
+                                        <td><span class="badge bg-primary">@opp.Stage</span></td>
+                                        <td class="text-end">₹@opp.Amount.ToString("N2")</td>
+                                        <td>@(opp.Probability)%</td>
+                                        <td>@opp.ExpectedCloseDate.ToString("dd MMM yyyy")</td>
+                                        <td class="text-center">
+                                            <a asp-controller="Opportunities" asp-action="Details" asp-route-id="@opp.OpportunityId" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="bi bi-briefcase display-6 text-muted"></i>
+                        <p class="text-muted mt-2 mb-0">No opportunities linked to this lead.</p>
+                    </div>
+                }
+            </div>
+
+            <!-- Follow-Ups Tab -->
+            <div class="tab-pane fade" id="followups" role="tabpanel">
+                @if (Model.RelatedFollowUps != null && Model.RelatedFollowUps.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Subject</th>
+                                    <th>Type</th>
+                                    <th>Due Date</th>
+                                    <th>Status</th>
+                                    <th>Assigned To</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var followUp in Model.RelatedFollowUps)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="fw-semibold">@followUp.Subject</span>
+                                        </td>
+                                        <td>@followUp.FollowUpType</td>
+                                        <td>
+                                            @followUp.FollowUpDate.ToString("dd MMM yyyy")
+                                            @if (followUp.FollowUpDate < DateTime.Today)
+                                            {
+                                                <span class="badge bg-danger ms-1">Overdue</span>
+                                            }
+                                        </td>
+                                        <td><span class="badge bg-info">@followUp.Status</span></td>
+                                        <td>@followUp.AssignedToUser?.FullName</td>
+                                        <td class="text-center">
+                                            <a asp-controller="FollowUps" asp-action="Edit" asp-route-id="@followUp.FollowUpId" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="bi bi-calendar-check display-6 text-muted"></i>
+                        <p class="text-muted mt-2 mb-0">No follow-ups scheduled for this lead.</p>
+                    </div>
+                }
+            </div>
+
+            <!-- Activities Tab -->
+            <div class="tab-pane fade" id="activities" role="tabpanel">
+                @if (Model.RelatedActivities != null && Model.RelatedActivities.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Subject</th>
+                                    <th>Type</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Performed By</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var activity in Model.RelatedActivities)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="fw-semibold">@activity.Subject</span>
+                                        </td>
+                                        <td>@activity.ActivityType</td>
+                                        <td>@activity.ActivityDate.ToString("dd MMM yyyy hh:mm tt")</td>
+                                        <td><span class="badge bg-warning text-dark">@activity.Status</span></td>
+                                        <td>@activity.PerformedByUser?.FullName</td>
+                                        <td class="text-center">
+                                            <a asp-controller="Activities" asp-action="Edit" asp-route-id="@activity.ActivityId" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="bi bi-activity display-6 text-muted"></i>
+                        <p class="text-muted mt-2 mb-0">No activities recorded for this lead.</p>
+                    </div>
+                }
+            </div>
+
+            <!-- Audit Log Tab -->
+            <div class="tab-pane fade" id="audit" role="tabpanel">
+                @if (Model.AuditLogs != null && Model.AuditLogs.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                    <th>Field</th>
+                                    <th>Old Value</th>
+                                    <th>New Value</th>
+                                    <th>Changed By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var log in Model.AuditLogs)
+                                {
+                                    <tr>
+                                        <td>@log.Timestamp.ToString("dd MMM yyyy hh:mm tt")</td>
+                                        <td><span class="badge bg-secondary">@log.Action</span></td>
+                                        <td>@log.FieldName</td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(log.OldValue))
+                                            {
+                                                <span class="text-danger">@log.OldValue</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">—</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(log.NewValue))
+                                            {
+                                                <span class="text-success">@log.NewValue</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">—</span>
+                                            }
+                                        </td>
+                                        <td>@log.ChangedByUser</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="bi bi-clock-history display-6 text-muted"></i>
+                        <p class="text-muted mt-2 mb-0">No audit records found.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

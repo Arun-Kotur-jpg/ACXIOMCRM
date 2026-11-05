@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+server/node_modules/
+client/node_modules/
+
+# Environment Variables & Secrets
+.env
+server/.env
+.env.local
+.env.*.local
+
+# Database data directories and SQLite/Mongo locks
+data/
+data/db/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+diagnostic.data/
+mongod.lock
+
+# Build & Output
+client/dist/
+dist/
+build/
+
+# .NET Artifacts (if any)
+bin/
+obj/
+*.user
+*.suo
+
+# System & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+

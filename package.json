@@ -1,0 +1,20 @@
+{
+  "name": "acxiomcrm-mern",
+  "version": "1.0.0",
+  "description": "AcxiomCRM - Enterprise Customer Relationship Management (MERN Stack)",
+  "scripts": {
+    "install:server": "npm --prefix server install",
+    "install:client": "npm --prefix client install",
+    "install:all": "npm run install:server && npm run install:client",
+    "build:client": "npm --prefix client run build",
+    "build": "npm run build:client",
+    "start": "node server/server.js",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
+

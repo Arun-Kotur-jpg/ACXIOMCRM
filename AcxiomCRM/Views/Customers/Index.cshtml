@@ -1,0 +1,182 @@
+@model AcxiomCRM.Models.ViewModels.CustomerListViewModel
+
+@{
+    ViewData["Title"] = "Customers";
+    ViewData["CurrentPage"] = Model.Customers.PageNumber;
+    ViewData["TotalPages"] = Model.Customers.TotalPages;
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h3 mb-1">Customers</h1>
+        <p class="text-muted mb-0">Manage your customer relationships</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> New Customer
+    </a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" asp-action="Index">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Search</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" name="searchTerm" class="form-control" placeholder="Name, email, company..." value="@Model.SearchTerm" />
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Status</label>
+                    <select name="statusFilter" class="form-select">
+                        <option value="">All</option>
+                        <option value="1" selected="@(Model.StatusFilter.HasValue && (int)Model.StatusFilter.Value == 1 ? "selected" : null)">Active</option>
+                        <option value="0" selected="@(Model.StatusFilter.HasValue && (int)Model.StatusFilter.Value == 0 ? "selected" : null)">Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Owner</label>
+                    <select name="ownerFilter" asp-items="Model.AvailableOwners" class="form-select">
+                        <option value="">All Owners</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel me-1"></i> Apply
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg me-1"></i> Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (Model.Customers.Items.Any())
+{
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Company</th>
+                        <th>Status</th>
+                        <th>Owner</th>
+                        <th>Created</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var customer in Model.Customers.Items)
+                    {
+                        <tr>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@customer.CustomerId" class="fw-semibold text-decoration-none">
+                                    @customer.CustomerCode
+                                </a>
+                            </td>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@customer.CustomerId" class="text-decoration-none">
+                                    @customer.CustomerName
+                                </a>
+                            </td>
+                            <td>@customer.Email</td>
+                            <td>@customer.Phone</td>
+                            <td>@customer.CompanyName</td>
+                            <td>
+                                @if (customer.Status == CustomerStatus.Active)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td>@customer.Owner?.FullName</td>
+                            <td>@customer.CreatedDate.ToString("MMM dd, yyyy")</td>
+                            <td class="text-end">
+                                <div class="d-flex gap-1 justify-content-end">
+                                    <a asp-action="Edit" asp-route-id="@customer.CustomerId" class="btn btn-sm btn-outline-primary" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form asp-action="Deactivate" asp-route-id="@customer.CustomerId" method="post"
+                                          onsubmit="return confirm('Are you sure you want to deactivate this customer?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Deactivate">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (Model.Customers.TotalPages > 1)
+    {
+        <nav aria-label="Customer pagination" class="mt-4">
+            <ul class="pagination justify-content-center mb-0">
+                <li class="page-item @(Model.Customers.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link" asp-action="Index"
+                       asp-route-page="@(Model.Customers.PageNumber - 1)"
+                       asp-route-searchTerm="@Model.SearchTerm"
+                       asp-route-statusFilter="@(Model.StatusFilter.HasValue ? ((int)Model.StatusFilter.Value).ToString() : null)"
+                       asp-route-ownerFilter="@Model.OwnerFilter"
+                       asp-route-sortBy="@Model.SortBy">
+                        <i class="bi bi-chevron-left"></i> Previous
+                    </a>
+                </li>
+                @for (int i = 1; i <= Model.Customers.TotalPages; i++)
+                {
+                    <li class="page-item @(i == Model.Customers.PageNumber ? "active" : "")">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-page="@i"
+                           asp-route-searchTerm="@Model.SearchTerm"
+                           asp-route-statusFilter="@(Model.StatusFilter.HasValue ? ((int)Model.StatusFilter.Value).ToString() : null)"
+                           asp-route-ownerFilter="@Model.OwnerFilter"
+                           asp-route-sortBy="@Model.SortBy">
+                            @i
+                        </a>
+                    </li>
+                }
+                <li class="page-item @(Model.Customers.HasNextPage ? "" : "disabled")">
+                    <a class="page-link" asp-action="Index"
+                       asp-route-page="@(Model.Customers.PageNumber + 1)"
+                       asp-route-searchTerm="@Model.SearchTerm"
+                       asp-route-statusFilter="@(Model.StatusFilter.HasValue ? ((int)Model.StatusFilter.Value).ToString() : null)"
+                       asp-route-ownerFilter="@Model.OwnerFilter"
+                       asp-route-sortBy="@Model.SortBy">
+                        Next <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
+
+    <div class="text-center text-muted mt-2">
+        <small>Showing @Model.Customers.Items.Count of @Model.Customers.TotalCount customers</small>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-people display-4 text-muted"></i>
+            <h5 class="mt-3">No customers found</h5>
+            <p class="text-muted">Try adjusting your filters or create a new customer to get started.</p>
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> New Customer
+            </a>
+        </div>
+    </div>
+}

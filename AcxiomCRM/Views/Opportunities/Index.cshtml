@@ -1,0 +1,186 @@
+@model AcxiomCRM.Models.ViewModels.OpportunityListViewModel
+@{
+    ViewData["Title"] = "Opportunities";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 fw-bold text-dark mb-1">Opportunities</h1>
+        <p class="text-secondary small mb-0">Track and manage your sales pipeline</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> New Opportunity
+    </a>
+</div>
+
+<!-- Filters -->
+<div class="card shadow-sm border mb-4">
+    <div class="card-body">
+        <form method="get" asp-action="Index" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-secondary">Search</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                    <input type="text" name="searchTerm" value="@Model.SearchTerm" class="form-control" placeholder="Opportunity name or customer..." />
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-secondary">Stage</label>
+                <select name="stage" class="form-select" asp-items="Html.GetEnumSelectList<AcxiomCRM.Models.Enums.OpportunityStage>()">
+                    <option value="">All Stages</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-secondary">Status</label>
+                <select name="status" class="form-select" asp-items="Html.GetEnumSelectList<AcxiomCRM.Models.Enums.OpportunityStatus>()">
+                    <option value="">All Statuses</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-secondary">Assigned To</label>
+                <select name="assigneeId" class="form-select" asp-items="Model.AvailableAssignees">
+                    <option value="">All Users</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i> Filter
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary" title="Reset Filters">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Table Card -->
+<div class="card shadow-sm border">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Opportunity Name</th>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>Stage</th>
+                    <th>Prob.</th>
+                    <th>Weighted Value</th>
+                    <th>Status</th>
+                    <th>Assigned To</th>
+                    <th>Close Date</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Opportunities.Items.Any())
+                {
+                    @foreach (var opp in Model.Opportunities.Items)
+                    {
+                        var stageBadge = opp.Stage switch
+                        {
+                            OpportunityStage.Qualification => "badge-stage-qual",
+                            OpportunityStage.Proposal => "badge-stage-prop",
+                            OpportunityStage.Negotiation => "badge-stage-neg",
+                            OpportunityStage.Won => "badge-stage-won",
+                            OpportunityStage.Lost => "badge-stage-lost",
+                            _ => "bg-secondary"
+                        };
+
+                        var statusBadge = opp.Status switch
+                        {
+                            OpportunityStatus.Won => "bg-success",
+                            OpportunityStatus.Lost => "bg-danger",
+                            _ => "bg-info text-dark"
+                        };
+
+                        <tr>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@opp.OpportunityId" class="fw-semibold text-decoration-none">
+                                    @opp.OpportunityName
+                                </a>
+                            </td>
+                            <td>
+                                <a asp-controller="Customers" asp-action="Details" asp-route-id="@opp.CustomerId" class="text-secondary text-decoration-none">
+                                    @opp.Customer?.CustomerName
+                                </a>
+                            </td>
+                            <td class="fw-semibold">₹@opp.Amount.ToString("N2")</td>
+                            <td><span class="badge @stageBadge">@opp.Stage</span></td>
+                            <td>@opp.Probability%</td>
+                            <td class="text-secondary">₹@opp.WeightedAmount.ToString("N2")</td>
+                            <td><span class="badge @statusBadge">@opp.Status</span></td>
+                            <td>
+                                <span class="small text-secondary">
+                                    <i class="bi bi-person me-1"></i>@(opp.AssignedToUser?.FullName ?? "Unassigned")
+                                </span>
+                            </td>
+                            <td class="small text-secondary">@opp.ExpectedCloseDate.ToString("dd MMM yyyy")</td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a asp-action="Details" asp-route-id="@opp.OpportunityId" class="btn btn-outline-secondary" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@opp.OpportunityId" class="btn btn-outline-secondary" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="10" class="text-center py-5 text-secondary">
+                            <i class="bi bi-briefcase display-6 d-block mb-2 text-muted"></i>
+                            No opportunities found matching your criteria.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.Opportunities.TotalPages > 1)
+    {
+        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+            <span class="small text-secondary">
+                Showing @(((Model.Opportunities.PageNumber - 1) * Model.Opportunities.PageSize) + 1) to 
+                @(Math.Min(Model.Opportunities.PageNumber * Model.Opportunities.PageSize, Model.Opportunities.TotalCount)) of @Model.Opportunities.TotalCount opportunities
+            </span>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(Model.Opportunities.HasPreviousPage ? "" : "disabled")">
+                        <a class="page-link" asp-action="Index" 
+                           asp-route-page="@(Model.Opportunities.PageNumber - 1)"
+                           asp-route-searchTerm="@Model.SearchTerm"
+                           asp-route-stage="@Model.StageFilter"
+                           asp-route-status="@Model.StatusFilter"
+                           asp-route-assigneeId="@Model.AssigneeFilter">Previous</a>
+                    </li>
+                    @for (int i = 1; i <= Model.Opportunities.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.Opportunities.PageNumber ? "active" : "")">
+                            <a class="page-link" asp-action="Index" 
+                               asp-route-page="@i"
+                               asp-route-searchTerm="@Model.SearchTerm"
+                               asp-route-stage="@Model.StageFilter"
+                               asp-route-status="@Model.StatusFilter"
+                               asp-route-assigneeId="@Model.AssigneeFilter">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(Model.Opportunities.HasNextPage ? "" : "disabled")">
+                        <a class="page-link" asp-action="Index" 
+                           asp-route-page="@(Model.Opportunities.PageNumber + 1)"
+                           asp-route-searchTerm="@Model.SearchTerm"
+                           asp-route-stage="@Model.StageFilter"
+                           asp-route-status="@Model.StatusFilter"
+                           asp-route-assigneeId="@Model.AssigneeFilter">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
+

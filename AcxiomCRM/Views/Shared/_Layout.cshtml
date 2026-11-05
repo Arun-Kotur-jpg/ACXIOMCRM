@@ -1,0 +1,262 @@
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject AcxiomCRM.Services.IFollowUpService FollowUpService
+
+@{
+    var currentUser = SignInManager.IsSignedIn(User) ? await UserManager.GetUserAsync(User) : null;
+    var currentRole = User.IsInRole(RoleConstants.Admin) 
+        ? RoleConstants.Admin 
+        : User.IsInRole(RoleConstants.Manager) 
+            ? RoleConstants.Manager 
+            : RoleConstants.SalesExecutive;
+
+    var (upcomingFollowUps, overdueFollowUps) = SignInManager.IsSignedIn(User) && currentUser != null
+        ? await FollowUpService.GetCountsAsync(currentUser.Id, currentRole)
+        : (0, 0);
+
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - AcxiomCRM</title>
+    
+    <!-- Bootstrap 5 CDN + Local Fallback -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <div class="app-wrapper">
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar">
+            <a asp-controller="Dashboard" asp-action="Index" class="sidebar-brand">
+                <i class="bi bi-pie-chart-fill"></i>
+                <span>AcxiomCRM</span>
+            </a>
+
+            <ul class="sidebar-nav">
+                <li class="sidebar-section-title">Core CRM</li>
+                <li>
+                    <a asp-controller="Dashboard" asp-action="Index" class="sidebar-link @(currentController == "Dashboard" ? "active" : "")">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a asp-controller="Customers" asp-action="Index" class="sidebar-link @(currentController == "Customers" ? "active" : "")">
+                        <i class="bi bi-people-fill"></i>
+                        <span>Customers</span>
+                    </a>
+                </li>
+                <li>
+                    <a asp-controller="Leads" asp-action="Index" class="sidebar-link @(currentController == "Leads" ? "active" : "")">
+                        <i class="bi bi-funnel-fill"></i>
+                        <span>Leads</span>
+                    </a>
+                </li>
+                <li>
+                    <a asp-controller="Opportunities" asp-action="Index" class="sidebar-link @(currentController == "Opportunities" ? "active" : "")">
+                        <i class="bi bi-briefcase-fill"></i>
+                        <span>Opportunities</span>
+                    </a>
+                </li>
+                <li>
+                    <a asp-controller="FollowUps" asp-action="Index" class="sidebar-link @(currentController == "FollowUps" ? "active" : "")">
+                        <i class="bi bi-calendar-event"></i>
+                        <span>Follow-Ups</span>
+                        @if (overdueFollowUps > 0)
+                        {
+                            <span class="badge bg-danger ms-auto rounded-pill" title="@overdueFollowUps Overdue">@overdueFollowUps</span>
+                        }
+                    </a>
+                </li>
+                <li>
+                    <a asp-controller="Activities" asp-action="Index" class="sidebar-link @(currentController == "Activities" ? "active" : "")">
+                        <i class="bi bi-check2-square"></i>
+                        <span>Activities</span>
+                    </a>
+                </li>
+
+                <li class="sidebar-section-title">Analytics</li>
+                <li>
+                    <a asp-controller="Reports" asp-action="Index" class="sidebar-link @(currentController == "Reports" ? "active" : "")">
+                        <i class="bi bi-file-earmark-bar-graph"></i>
+                        <span>Reports</span>
+                    </a>
+                </li>
+
+                @if (User.IsInRole(RoleConstants.Admin))
+                {
+                    <li class="sidebar-section-title">Administration</li>
+                    <li>
+                        <a asp-controller="Users" asp-action="Index" class="sidebar-link @(currentController == "Users" ? "active" : "")">
+                            <i class="bi bi-person-gear"></i>
+                            <span>Users & Roles</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="Audit" asp-action="Index" class="sidebar-link @(currentController == "Audit" ? "active" : "")">
+                            <i class="bi bi-shield-check"></i>
+                            <span>Audit Logs</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-lock text-info"></i>
+                    <div>
+                        <div class="fw-semibold text-white">AcxiomCRM Enterprise</div>
+                        <div style="font-size: 0.75rem;">Role-scoped CRM Engine</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Wrapper -->
+        <div class="app-main">
+            <!-- Topbar Header -->
+            <header class="app-topbar">
+                <div class="topbar-left">
+                    <button class="btn btn-sm btn-outline-secondary d-lg-none me-2" id="sidebarToggle" type="button" aria-label="Toggle navigation">
+                        <i class="bi bi-list fs-5"></i>
+                    </button>
+                    <span class="text-secondary small fw-medium">
+                        <i class="bi bi-geo-alt me-1"></i>Asia/Kolkata (IST) &bull; @DateTime.UtcNow.AddHours(5.5).ToString("dd MMM yyyy")
+                    </span>
+                </div>
+
+                <div class="topbar-right">
+                    <!-- Notification Bell for Follow-ups -->
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-bell"></i>
+                            @if (overdueFollowUps > 0 || upcomingFollowUps > 0)
+                            {
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
+                                    @(overdueFollowUps + upcomingFollowUps)
+                                </span>
+                            }
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width: 250px;">
+                            <li class="dropdown-header fw-bold">Follow-Up Notifications</li>
+                            <li>
+                                <a class="dropdown-item d-flex justify-content-between align-items-center" asp-controller="FollowUps" asp-action="Index" asp-route-scope="Overdue">
+                                    <span><i class="bi bi-exclamation-circle text-danger me-2"></i>Overdue Tasks</span>
+                                    <span class="badge bg-danger">@overdueFollowUps</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex justify-content-between align-items-center" asp-controller="FollowUps" asp-action="Index" asp-route-scope="Upcoming">
+                                    <span><i class="bi bi-clock text-primary me-2"></i>Upcoming Planned</span>
+                                    <span class="badge bg-primary">@upcomingFollowUps</span>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-center small text-primary" asp-controller="FollowUps" asp-action="Index">View All Follow-Ups</a></li>
+                        </ul>
+                    </div>
+
+                    <!-- User Profile & Role -->
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="role-badge @(currentRole == RoleConstants.Admin ? "admin" : currentRole == RoleConstants.Manager ? "manager" : "sales")">
+                            @currentRole
+                        </span>
+
+                        <div class="dropdown">
+                            <button class="btn btn-light btn-sm dropdown-toggle fw-semibold text-dark" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-person-circle me-1 text-secondary"></i>
+                                @(currentUser?.FullName ?? User.Identity?.Name)
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                <li class="dropdown-item-text">
+                                    <div class="small fw-bold">@(currentUser?.FullName)</div>
+                                    <div class="small text-muted">@User.Identity?.Name</div>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="dropdown-item text-danger">
+                                            <i class="bi bi-box-arrow-right me-2"></i>Logout
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Page Body -->
+            <main class="app-content">
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center" role="alert">
+                        <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                        <div>@TempData["SuccessMessage"]</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                        <div>@TempData["ErrorMessage"]</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                @RenderBody()
+            </main>
+
+            <!-- Footer -->
+            <footer class="app-footer">
+                <div>&copy; 2026 AcxiomCRM &bull; MCA Final Project</div>
+                <div>Role-based Customer Relationship Management &bull; ASP.NET Core &amp; EF Core</div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Vendored & CDN Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+    <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/chartjs/chart.umd.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var sidebar = document.querySelector('.app-sidebar');
+            var toggleBtn = document.getElementById('sidebarToggle');
+            var backdrop = document.getElementById('sidebarBackdrop');
+            if (toggleBtn && sidebar) {
+                toggleBtn.addEventListener('click', function () {
+                    sidebar.classList.toggle('show');
+                    if (backdrop) backdrop.classList.toggle('show');
+                });
+            }
+            if (backdrop && sidebar) {
+                backdrop.addEventListener('click', function () {
+                    sidebar.classList.remove('show');
+                    backdrop.classList.remove('show');
+                });
+            }
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
+

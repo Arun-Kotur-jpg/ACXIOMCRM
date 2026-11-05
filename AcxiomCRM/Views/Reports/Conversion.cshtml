@@ -1,0 +1,141 @@
+@model AcxiomCRM.Models.ViewModels.ConversionReportViewModel
+@{
+    ViewData["Title"] = "Conversion Analytics";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 fw-bold text-dark mb-1">Conversion Analytics</h1>
+        <p class="text-secondary small mb-0">Track lead-to-customer conversion efficiency and revenue realization</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Reports Hub
+    </a>
+</div>
+
+<!-- Date Filter Card -->
+<div class="card shadow-sm border mb-4">
+    <div class="card-body">
+        <form method="get" asp-action="Conversion" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold text-secondary">Start Date</label>
+                <input type="date" name="startDate" value="@(ViewBag.StartDate != null ? ((DateTime)ViewBag.StartDate).ToString("yyyy-MM-dd") : "")" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold text-secondary">End Date</label>
+                <input type="date" name="endDate" value="@(ViewBag.EndDate != null ? ((DateTime)ViewBag.EndDate).ToString("yyyy-MM-dd") : "")" class="form-control" />
+            </div>
+            <div class="col-md-4 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i> Apply Filter
+                </button>
+                <a asp-action="Conversion" class="btn btn-outline-secondary" title="Reset">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Primary Funnel KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm border p-3">
+            <span class="text-secondary small fw-semibold">Total Leads Sourced</span>
+            <div class="fs-2 fw-bold text-dark mt-1">@Model.TotalLeads</div>
+            <span class="small text-muted">All inquiries in scope</span>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border p-3">
+            <span class="text-secondary small fw-semibold">Converted Customers</span>
+            <div class="fs-2 fw-bold text-success mt-1">@Model.ConvertedLeads</div>
+            <span class="small text-muted">Qualified &amp; converted</span>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border p-3">
+            <span class="text-secondary small fw-semibold">Lead Conversion Rate</span>
+            <div class="fs-2 fw-bold text-primary mt-1">@Model.ConversionRate.ToString("F1")%</div>
+            <div class="progress mt-2" style="height: 6px;">
+                <div class="progress-bar bg-primary" role="progressbar" style="width: @Math.Min(100, Model.ConversionRate)%;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border p-3">
+            <span class="text-secondary small fw-semibold">Realized Won Revenue</span>
+            <div class="fs-2 fw-bold text-success mt-1">₹@Model.WonRevenue.ToString("N2")</div>
+            <span class="small text-muted">From converted opportunities</span>
+        </div>
+    </div>
+</div>
+
+<!-- Funnel Breakdown Breakdown -->
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card shadow-sm border h-100">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold text-dark">Lead Conversion Lifecycle</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                        <div>
+                            <span class="fw-semibold text-dark d-block">Total Leads</span>
+                            <span class="text-secondary small">Gross leads received</span>
+                        </div>
+                        <span class="badge bg-light text-dark border fs-6">@Model.TotalLeads</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                        <div>
+                            <span class="fw-semibold text-success d-block">Converted to Customer</span>
+                            <span class="text-secondary small">Successfully converted into clients</span>
+                        </div>
+                        <span class="badge bg-success fs-6">@Model.ConvertedLeads</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                        <div>
+                            <span class="fw-semibold text-secondary d-block">Unconverted / In Progress</span>
+                            <span class="text-secondary small">Active or lost prior to conversion</span>
+                        </div>
+                        <span class="badge bg-secondary fs-6">@Model.UnconvertedLeads</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow-sm border h-100">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold text-dark">Deal Outcome Performance</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                        <div>
+                            <span class="fw-semibold text-success d-block">Won Opportunities</span>
+                            <span class="text-secondary small">Deals closed successfully</span>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-success fs-6 mb-1">@Model.WonOpportunities</span>
+                            <div class="text-success small fw-semibold">₹@Model.WonRevenue.ToString("N2")</div>
+                        </div>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                        <div>
+                            <span class="fw-semibold text-danger d-block">Lost Opportunities</span>
+                            <span class="text-secondary small">Deals closed as lost</span>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-danger fs-6 mb-1">@Model.LostOpportunities</span>
+                            <div class="text-danger small fw-semibold">₹@Model.LostRevenue.ToString("N2")</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
